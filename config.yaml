@@ -1,0 +1,145 @@
+settings:
+  request_timeout_seconds: 15
+  browser_timeout_ms: 30000
+  max_internal_links: 30
+  workers: 4
+  polite_delay_seconds: 0.4
+  pagespeed_retries: 3
+  request_retries: 2
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+  output_dir: "output"
+
+scoring:
+  category_weights:
+    performance: 25
+    seo: 25
+    security: 20
+    ux_mobile: 15
+    ecommerce: 15
+  rules:
+    performance_low:
+      category: performance
+      when: "pagespeed.performance < 50"
+      points: 12
+      level: critical
+      title: "Very low performance score"
+      fix: "Reduce render-blocking work, optimize images, defer non-critical scripts, and improve server response time."
+    performance_medium:
+      category: performance
+      when: "50 <= pagespeed.performance < 75"
+      points: 6
+      level: warning
+      title: "Performance score needs improvement"
+      fix: "Prioritize Core Web Vitals, image compression, caching, and JavaScript reduction."
+    lcp_slow:
+      category: performance
+      when: "pagespeed.lcp_ms > 4000"
+      points: 7
+      level: warning
+      title: "Largest Contentful Paint is slow"
+      fix: "Optimize the hero/LCP resource, reduce server delay, and preload the critical image or font when appropriate."
+    cls_high:
+      category: performance
+      when: "pagespeed.cls > 0.25"
+      points: 5
+      level: warning
+      title: "Layout shifts are high"
+      fix: "Reserve space for images, banners, ads, and dynamic content so the layout does not jump while loading."
+    no_title:
+      category: seo
+      when: "html_seo.title_missing == true"
+      points: 6
+      level: warning
+      title: "Missing page title"
+      fix: "Add a unique, descriptive title tag that reflects the page topic and search intent."
+    no_meta_description:
+      category: seo
+      when: "html_seo.meta_description_missing == true"
+      points: 5
+      level: warning
+      title: "Missing meta description"
+      fix: "Add a concise, unique meta description that explains the page and encourages clicks."
+    h1_missing:
+      category: seo
+      when: "html_seo.h1_count == 0"
+      points: 4
+      level: warning
+      title: "No H1 heading found"
+      fix: "Add one clear H1 that describes the primary topic of the page."
+    images_missing_alt:
+      category: seo
+      when: "html_seo.images_missing_alt > 0"
+      points: 3
+      level: info
+      title: "Images missing alt text"
+      fix: "Add useful alt text to informative images and empty alt attributes to purely decorative images."
+    no_canonical:
+      category: seo
+      when: "html_seo.canonical_missing == true"
+      points: 3
+      level: info
+      title: "Canonical tag missing"
+      fix: "Add a canonical URL so search engines understand the preferred version of the page."
+    no_https:
+      category: security
+      when: "security.https == false"
+      points: 15
+      level: critical
+      title: "Website is not using HTTPS"
+      fix: "Serve the site over HTTPS and redirect all HTTP traffic to the HTTPS version."
+    cert_expiring:
+      category: security
+      when: "security.cert_days_remaining != null and security.cert_days_remaining < 14"
+      points: 8
+      level: critical
+      title: "TLS certificate expires soon"
+      fix: "Renew the TLS certificate and verify automatic renewal is working."
+    no_hsts:
+      category: security
+      when: "security.hsts == false"
+      points: 3
+      level: warning
+      title: "HSTS header missing"
+      fix: "Enable Strict-Transport-Security after confirming the entire site works correctly over HTTPS."
+    no_csp:
+      category: security
+      when: "security.csp == false"
+      points: 3
+      level: warning
+      title: "Content Security Policy missing"
+      fix: "Deploy a tested Content-Security-Policy to limit which scripts, styles, frames, and resources the site can load."
+    mobile_scroll:
+      category: ux_mobile
+      when: "browser.horizontal_scroll_mobile == true"
+      points: 6
+      level: warning
+      title: "Horizontal scrolling detected on mobile"
+      fix: "Fix overflowing elements, large fixed-width content, and viewport-related CSS on mobile layouts."
+    broken_images:
+      category: ux_mobile
+      when: "browser.broken_images > 0"
+      points: 6
+      level: warning
+      title: "Broken images detected"
+      fix: "Replace missing image URLs and verify CDN, lazy-loading, and responsive image paths."
+    page_load_failed:
+      category: ux_mobile
+      when: "browser.page_loaded == false"
+      points: 12
+      level: critical
+      title: "Page failed to load in browser check"
+      fix: "Investigate server errors, bot protection, redirect loops, or JavaScript crashes that prevent normal rendering."
+    cart_failed:
+      category: ecommerce
+      when: "ecommerce.is_store == true and ecommerce.cart_status == 'fail'"
+      points: 10
+      level: critical
+      title: "Add-to-cart or cart flow failed"
+      fix: "Test product variant selection, add-to-cart handlers, cart routes, and any app scripts involved in the purchase flow."
+    checkout_unreachable:
+      category: ecommerce
+      when: "ecommerce.is_store == true and ecommerce.checkout_status == 'fail'"
+      points: 10
+      level: critical
+      title: "Checkout could not be reached"
+      fix: "Check cart-to-checkout buttons, redirects, JavaScript errors, and platform checkout configuration."

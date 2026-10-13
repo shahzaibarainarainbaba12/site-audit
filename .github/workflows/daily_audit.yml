@@ -1,0 +1,86 @@
+name: Daily Website Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Optional number of sites to audit"
+        required: false
+        type: string
+  schedule:
+    - cron: "20 2 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PSI_API_KEY: ${{ secrets.PSI_API_KEY }}
+      LEADS_CSV_URL: ${{ secrets.LEADS_CSV_URL }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Chromium
+        run: playwright install --with-deps chromium
+
+      - name: Validate lead source
+        shell: bash
+        run: |
+          if [ -z "$LEADS_CSV_URL" ] && [ ! -f leads.tsv ]; then
+            echo "Missing LEADS_CSV_URL secret and no leads.tsv file is present."
+            exit 2
+          fi
+
+      - name: Set run date
+        shell: bash
+        run: echo "AUDIT_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
+
+      - name: Restore same-day resume state
+        uses: actions/cache/restore@v4
+        with:
+          path: output/state
+          key: audit-state-${{ env.AUDIT_DATE }}-${{ github.run_id }}
+          restore-keys: |
+            audit-state-${{ env.AUDIT_DATE }}-
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Run audit
+        shell: bash
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.limit }}" ]; then
+            ARGS="--limit ${{ inputs.limit }}"
+          fi
+          python main.py $ARGS
+
+      - name: Save same-day resume state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: output/state
+          key: audit-state-${{ env.AUDIT_DATE }}-${{ github.run_id }}
+
+      - name: Upload audit output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-audit-${{ github.run_id }}
+          path: output/
+          if-no-files-found: warn
+          retention-days: 14
